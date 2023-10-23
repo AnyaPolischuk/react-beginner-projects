@@ -1,26 +1,62 @@
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './index.scss';
+import { Success } from './components/Success';
+import { Users } from './components/Users';
+
+// Тут список пользователей: https://reqres.in/api/users
 
 function App() {
+  const [users, setUsers] = useState([]);
+  const [isLoading, setLoading] = useState(true);
+  const [searchValue, setSearchValue] = useState("");
+  const [invites, setInvites] = useState([]);
+  const [success, setSuccess] = useState(false);
 
-  const [count, setCount] = useState(0);
-
-  const onClickPlus = () => {
-    setCount(count + 1);
+  const onClickInvite = (id) => {
+    if (invites.includes(id)) {
+      setInvites(prev => prev.filter((_id) => _id !== id))
+    } else {
+      setInvites(prev => [...prev, id]);
+    }
   }
 
-  const onClickMinus = () => {
-    setCount(count - 1);
+  useEffect(() => {
+    fetch('https://reqres.in/api/users')
+      .then((res) => res.json())
+      .then((json) => {
+        setUsers(json.data);
+      })
+      .catch((error) => {
+        console.warn(error);
+        alert("Ошибка при получении пользователей");
+      })
+      .finally(() => setLoading(false));
+  }, [])
+
+  const onChangeSearchValue = (event) => {
+    setSearchValue(event.target.value);
+  }
+
+  const onClickSendInvites = () => {
+    setSuccess(true);
   }
 
   return (
     <div className="App">
-      <div>
-        <h2>Счетчик:</h2>
-        <h1>{count}</h1>
-        <button onClick={onClickMinus} className="minus">- Минус</button>
-        <button onClick={onClickPlus} className="plus">Плюс +</button>
-      </div>
+      {
+        success ? (
+          <Success count={invites.length} />
+        ) : (
+          <Users
+            searchValue={searchValue} 
+            onChangeSearchValue={onChangeSearchValue} 
+            items={users} 
+            isLoading={isLoading} 
+            invites={invites}
+            onClickInvite={onClickInvite}
+            onClickSendInvites={onClickSendInvites}
+          />
+        )}
     </div>
   );
 }
