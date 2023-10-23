@@ -1,26 +1,63 @@
-import { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Block } from './Block';
 import './index.scss';
 
 function App() {
+  const [fromCurrency, setFromCurrency] = useState("JPY");
+  const [toCurrency, setToCurrency] = useState("USD");
+  const [fromPrice, setFromPrice] = useState(0);
+  const [toPrice, setToPrice] = useState(1);
 
-  const [count, setCount] = useState(0);
+  const ratesRef = useRef({});
 
-  const onClickPlus = () => {
-    setCount(count + 1);
+  useEffect(() => {
+    fetch("https://www.cbr-xml-daily.ru/latest.js")
+      .then((res) => res.json())
+      .then((json) => {
+        ratesRef.current = json.rates;
+        onChangeToPrice(1)
+      })
+      .catch((err) => {
+        console.warn(err);
+        alert("Не удалось получить информацию");
+      })
+  }, []);
+
+  const onChangeFromPrice  = (value) => {
+    const price = value / ratesRef.current[fromCurrency];
+    const result = price * ratesRef.current[toCurrency];
+    setFromPrice(value);
+    setToPrice(result.toFixed(3));
+  };
+
+  const onChangeToPrice = (value) => {
+    const result = (ratesRef.current[fromCurrency] / ratesRef.current[toCurrency]) * value;
+    setFromPrice(result.toFixed(3));
+    setToPrice(value);
   }
 
-  const onClickMinus = () => {
-    setCount(count - 1);
-  }
+  useEffect(() => {
+    onChangeFromPrice(fromPrice);
+  }, [fromCurrency]);
+
+  useEffect(() => {
+    onChangeToPrice(toPrice);
+  }, [toCurrency]);
 
   return (
     <div className="App">
-      <div>
-        <h2>Счетчик:</h2>
-        <h1>{count}</h1>
-        <button onClick={onClickMinus} className="minus">- Минус</button>
-        <button onClick={onClickPlus} className="plus">Плюс +</button>
-      </div>
+      <Block 
+        value={fromPrice} 
+        currency={fromCurrency} 
+        onChangeCurrency={setFromCurrency} 
+        onChangeValue={onChangeFromPrice}
+      />
+      <Block 
+        value={toPrice} 
+        currency={toCurrency} 
+        onChangeCurrency={setToCurrency} 
+        onChangeValue={onChangeToPrice}
+      />
     </div>
   );
 }
